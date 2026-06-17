@@ -1,72 +1,72 @@
 # Vietnam Stock Advisor RAG Agent
 
-Agent tu van va phan tich du lieu chung khoan Viet Nam cho mon hoc. Project co hai nhanh du lieu:
+Agent tư vấn và phân tích dữ liệu chứng khoán Việt Nam cho môn học. Project có hai nhánh dữ liệu:
 
-- Structured data vao Postgres de agent tu sinh SQL va query.
-- Text data vao Qdrant de agent retrieve theo RAG.
+- Structured data vào Postgres để agent tự sinh SQL và query.
+- Text data vào Qdrant để agent retrieve theo RAG.
 
-## Cau truc
+## Cấu trúc
 
 ```text
 src/
-  ingestion/    Lay du lieu tu vnstock va load vao Postgres/Qdrant
-  chunking/     Cat text thanh chunks
-  embeddings/   Tao vector embedding local
-  vectordb/     Tao collection va upsert chunks vao Qdrant
-  retrieval/    Retriever doc tu Qdrant
-  prompts/      System prompt cho SQL + RAG agent
-  llm/          Tao LangChain agent va LLM client
-  api/          Wrapper goi agent cho UI/API
+  ingestion/    Lấy dữ liệu từ vnstock và load vào Postgres/Qdrant
+  chunking/     Cắt văn bản thành các đoạn nhỏ
+  embeddings/   Tạo vector embedding cục bộ
+  vectordb/     Tạo collection và upsert các đoạn văn bản vào Qdrant
+  retrieval/    Retriever lấy tài liệu từ Qdrant
+  prompts/      Prompt hệ thống cho agent SQL + RAG
+  llm/          Tạo LangChain agent và LLM client
+  api/          Wrapper gọi agent cho UI/API
   utils/        Config, env, Postgres helpers
 ```
 
-## Chay tat ca bang Docker
+## Chạy tất cả bằng Docker
 
 ```powershell
 docker compose up -d
 ```
 
-Lenh nay khoi dong Postgres, Qdrant, init schema, ingest gia, ingest text RAG, Adminer va Streamlit.
+Lệnh này khởi động Postgres, Qdrant, khởi tạo schema, ingest dữ liệu giá, ingest dữ liệu văn bản RAG, Adminer và Streamlit.
 
-## Chay tung job
+## Chạy từng job
 
-Khoi tao schema:
+Khởi tạo schema:
 
 ```powershell
 docker compose run --rm init-postgres
 ```
 
-Lay gia co phieu vao Postgres:
+Lấy dữ liệu giá cổ phiếu vào Postgres:
 
 ```powershell
 docker compose run --rm ingest-prices
 ```
 
-Lay company profile, chunk va embed vao Qdrant:
+Lấy hồ sơ doanh nghiệp, chia nhỏ văn bản và tạo embedding vào Qdrant:
 
 ```powershell
 docker compose run --rm ingest-texts
 ```
 
-Xoa collection cu roi embed lai:
+Xóa collection cũ rồi tạo embedding lại:
 
 ```powershell
 docker compose run --rm ingest-texts python -m src.ingestion.text_loader --recreate-collection
 ```
 
-## Mo ung dung
+## Mở ứng dụng
 
 ```text
 http://localhost:8501
 ```
 
-Adminer xem Postgres:
+Adminer để xem Postgres:
 
 ```text
 http://localhost:8080
 ```
 
-Qdrant collection mac dinh:
+Collection Qdrant mặc định:
 
 ```text
 vn_stock_text_chunks
