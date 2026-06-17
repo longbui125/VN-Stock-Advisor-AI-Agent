@@ -1,0 +1,80 @@
+warehouse:
+  postgres_uri_env: POSTGRES_URI
+  default_schema: market_data
+
+vector_database:
+  provider: qdrant
+  url_env: QDRANT_URL
+  default_collection: vn_stock_text_chunks
+
+sources:
+  vnstock_market:
+    enabled: true
+    kind: python_client
+    provider: vnstock
+    default_source: VCI
+    schedule: "0 18 * * 1-5"
+    description: "Prototype connector for Vietnam stock market OHLCV data."
+    target:
+      structured: postgres
+    default_symbols:
+      - VCB
+      - FPT
+      - HPG
+      - VNM
+      - MWG
+      - TCB
+      - SSI
+
+  vnstock_company_text:
+    enabled: true
+    kind: python_client
+    provider: vnstock
+    default_source: KBS
+    schedule: "0 19 * * 1-5"
+    description: "Company profile, business model, history, officers, shareholders, subsidiaries, and recent company text for RAG."
+    target:
+      structured_metadata: postgres
+      text_chunks: qdrant
+    default_symbols:
+      - VCB
+      - FPT
+      - HPG
+      - VNM
+      - MWG
+      - TCB
+      - SSI
+
+  fiingroup_datafeed:
+    enabled: false
+    kind: api
+    provider: fiingroup
+    schedule: "0 18 * * 1-5"
+    description: "Production connector placeholder for FiinGroup API Datafeed."
+    target:
+      structured: postgres
+    env:
+      base_url: FIINGROUP_BASE_URL
+      api_key: FIINGROUP_API_KEY
+
+  vietstock_datafeed:
+    enabled: false
+    kind: api
+    provider: vietstock
+    schedule: "0 7,18 * * 1-5"
+    description: "Production connector placeholder for Vietstock DataFeed."
+    target:
+      structured: postgres
+    env:
+      base_url: VIETSTOCK_BASE_URL
+      api_key: VIETSTOCK_API_KEY
+
+  exchange_disclosures:
+    enabled: false
+    kind: crawler
+    provider: hose_hnx_vsdc
+    schedule: "0 */8 * * *"
+    description: "Disclosure and report crawler. Only extracted text should be embedded."
+    target:
+      structured_metadata: postgres
+      text_chunks: qdrant

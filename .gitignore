@@ -1,0 +1,16 @@
+.env
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local data and generated stores
+knowledge.db
+data/
+volumes/
+artifacts/
+logs/*
+!logs/.gitkeep
+
+# Notebook checkpoints
+.ipynb_checkpoints/

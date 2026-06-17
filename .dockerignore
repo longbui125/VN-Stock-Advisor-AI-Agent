@@ -1,0 +1,14 @@
+.env
+.venv
+venv
+__pycache__
+*.pyc
+.git
+.gitignore
+
+data
+volumes
+artifacts
+knowledge.db
+.ipynb_checkpoints
+logs

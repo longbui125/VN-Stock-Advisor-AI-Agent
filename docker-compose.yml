@@ -1,0 +1,123 @@
+services:
+  # === POSTGRES DATA WAREHOUSE ===
+  postgres:
+    image: postgres:16
+    container_name: stock-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: stocks
+      POSTGRES_USER: stocks
+      POSTGRES_PASSWORD: stocks
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stocks -d stocks"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # === QDRANT VECTOR DATABASE ===
+  qdrant:
+    image: qdrant/qdrant:v1.12.6
+    container_name: stock-qdrant
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
+    volumes:
+      - ./volumes/qdrant:/qdrant/storage
+
+  # === ONE-SHOT DATABASE INIT JOB ===
+  init-postgres:
+    build: .
+    container_name: stock-init-postgres
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      POSTGRES_URI: postgresql://stocks:stocks@postgres:5432/stocks
+      QDRANT_URL: http://qdrant:6333
+    command: ["python", "-m", "src.ingestion.init_postgres"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # === ONE-SHOT PRICE INGEST JOB ===
+  ingest-prices:
+    build: .
+    container_name: stock-ingest-prices
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      POSTGRES_URI: postgresql://stocks:stocks@postgres:5432/stocks
+      QDRANT_URL: http://qdrant:6333
+    command: ["python", "-m", "src.ingestion.price_loader"]
+    depends_on:
+      init-postgres:
+        condition: service_completed_successfully
+    restart: "no"
+
+  # === ONE-SHOT TEXT INGEST JOB FOR RAG ===
+  ingest-texts:
+    build: .
+    container_name: stock-ingest-texts
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      POSTGRES_URI: postgresql://stocks:stocks@postgres:5432/stocks
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: vn_stock_text_chunks
+    command: ["python", "-m", "src.ingestion.text_loader", "--recreate-collection"]
+    depends_on:
+      init-postgres:
+        condition: service_completed_successfully
+      qdrant:
+        condition: service_started
+    restart: "no"
+
+  # === STREAMLIT APP ===
+  app:
+    build: .
+    container_name: stock-advisor-app
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      POSTGRES_URI: postgresql://stocks:stocks@postgres:5432/stocks
+      QDRANT_URL: http://qdrant:6333
+    ports:
+      - "127.0.0.1:8501:8501"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      init-postgres:
+        condition: service_completed_successfully
+      ingest-texts:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # === POSTGRES WEB VIEWER ===
+  adminer:
+    image: adminer:4.8.1
+    container_name: stock-adminer
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+networks:
+  default:
+    name: stock-agent
