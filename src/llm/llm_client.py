@@ -8,11 +8,24 @@ from langchain.tools.retriever import create_retriever_tool
 from langchain_community.tools.sql_database.tool import QuerySQLDataBaseTool
 from langchain_community.utilities import SQLDatabase
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_google_genai import ChatGoogleGenerativeAI
 
 from src.prompts.prompt_templates import STOCK_ADVISOR_SYSTEM_PROMPT
 from src.retrieval.retriever import get_retriever
 from src.utils.helpers import get_env
+
+
+def _bool_env(name: str, default: str = "false") -> bool:
+    return get_env(name, default).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def get_chat_model():
+    from langchain_ollama import ChatOllama
+
+    return ChatOllama(
+        model=get_env("OLLAMA_MODEL", "qwen3:8b"),
+        base_url=get_env("OLLAMA_BASE_URL", "http://localhost:11434"),
+        temperature=0,
+    )
 
 
 def get_sql_tool():
@@ -44,27 +57,32 @@ def get_tools():
         get_retriever(),
         name="find",
         description=(
-            "Use for semantic search over Vietnam stock text documents stored in Qdrant: "
-            "disclosures, annual reports, financial statement notes, and company reports."
+            "Use FIRST for qualitative Vietnam company context stored in Qdrant: "
+            "company overview, business model, operating fields, company profile, "
+            "management, shareholders, risks, disclosures, annual reports, and company reports. "
+            "Prefer this tool for questions like 'FPT la cong ty gi?', 'hoat dong linh vuc nao?', "
+            "'tong quan cong ty', or any stock analysis requiring business context. "
+            "For deep analysis or buy/sell/hold questions, query broadly with symbol plus terms such as "
+            "tong quan, mo hinh kinh doanh, lich su, rui ro, ban lanh dao, co dong, von dieu le."
         ),
     )
 
     sql_tool = get_sql_tool()
     sql_tool.name = "sql"
     sql_tool.description = (
-        "Use for structured Vietnam stock market queries in Postgres. "
-        "Only write SELECT statements against the market_data schema."
+        "Use for structured Vietnam stock market queries in Postgres: prices, OHLCV, "
+        "volume, rankings, counts, financial statements, ratios, and corporate actions. "
+        "Only write SELECT statements against the market_data schema. "
+        "For buy/sell/hold or 'buy today' questions, use this tool to get latest price, "
+        "latest available trade_date, recent close prices, recent 60-session trend, and liquidity. "
+        "Do not use this as the only tool for company overview or business model questions; "
+        "if company metadata is blank or incomplete, call find next."
     )
     return [retriever_tool, sql_tool]
 
 
 def get_llm_and_agent(return_prompt: bool = False):
-    llm = ChatGoogleGenerativeAI(
-        model=get_env("GEMINI_MODEL", "gemini-2.5-flash"),
-        temperature=0,
-        streaming=True,
-        google_api_key=get_env("GEMINI_API_KEY"),
-    )
+    llm = get_chat_model()
 
     tools = get_tools()
     tool_names = [tool.name for tool in tools]
@@ -72,19 +90,27 @@ def get_llm_and_agent(return_prompt: bool = False):
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", STOCK_ADVISOR_SYSTEM_PROMPT),
-            MessagesPlaceholder(variable_name="chat_history"),
-            ("human", "{input}"),
-            ("assistant", "{agent_scratchpad}"),
+            MessagesPlaceholder(variable_name="chat_history", optional=True),
+            (
+                "human",
+                "{input}\n\n{agent_scratchpad}\n\n"
+                "Reminder: respond with exactly one JSON blob action. "
+                "Use Final Answer when you are ready to answer the user.",
+            ),
         ]
-    ).partial(tools="sql, find", tool_names="sql, find")
+    )
 
     agent = create_structured_chat_agent(llm=llm, tools=tools, prompt=prompt)
     executor = AgentExecutor(
         agent=agent,
         tools=tools,
         tool_names=tool_names,
-        verbose=True,
-        handle_parsing_errors=True,
+        verbose=_bool_env("AGENT_VERBOSE", "false"),
+        max_iterations=int(get_env("AGENT_MAX_ITERATIONS", "6")),
+        handle_parsing_errors=(
+            "Invalid format. Return exactly one JSON blob with action and action_input. "
+            "Use action \"Final Answer\" for the final response."
+        ),
     )
 
     if return_prompt:

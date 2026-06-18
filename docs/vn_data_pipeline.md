@@ -17,14 +17,25 @@ $env:POSTGRES_URI="postgresql://stocks:stocks@localhost:5432/stocks"
 $env:QDRANT_URL="http://localhost:6333"
 ```
 
-## Start Local Services
+## Start Infrastructure And Ingest Jobs
 
 ```powershell
 docker compose up -d
 ```
 
 This starts Postgres, Qdrant, the schema init job, the price ingest job, the text
-ingest job, Adminer, and the Streamlit app.
+ingest job, and Adminer. Streamlit is intentionally run separately on Windows so
+the terminal can show verbose agent traces.
+
+Before the first app run, install Ollama locally and download the model:
+
+```powershell
+winget install Ollama.Ollama
+ollama pull qwen3:14b
+ollama list
+```
+
+The default model is `qwen3:14b`. Use `qwen3:8b` on weaker machines.
 
 ## Initialize Warehouse
 
@@ -67,10 +78,18 @@ them into Qdrant collection `vn_stock_text_chunks`.
 - Exchange disclosures and company reports: every 4-8 hours; embed only newly
   detected text documents.
 
-## Run App
+## Run Streamlit Locally
 
 ```powershell
-docker compose up -d app
+$env:POSTGRES_URI="postgresql://stocks:stocks@localhost:5432/stocks"
+$env:QDRANT_URL="http://localhost:6333"
+$env:QDRANT_COLLECTION="vn_stock_text_chunks"
+$env:OLLAMA_BASE_URL="http://localhost:11434"
+$env:OLLAMA_MODEL="qwen3:14b"
+$env:AGENT_VERBOSE="true"
+$env:AGENT_MAX_ITERATIONS="6"
+$env:QDRANT_TOP_K="8"
+streamlit run main.py
 ```
 
 Open:

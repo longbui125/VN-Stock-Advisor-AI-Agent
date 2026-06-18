@@ -83,30 +83,6 @@ services:
         condition: service_started
     restart: "no"
 
-  # === STREAMLIT APP ===
-  app:
-    build: .
-    container_name: stock-advisor-app
-    volumes:
-      - .:/app
-    env_file:
-      - .env
-    environment:
-      POSTGRES_URI: postgresql://stocks:stocks@postgres:5432/stocks
-      QDRANT_URL: http://qdrant:6333
-    ports:
-      - "127.0.0.1:8501:8501"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      qdrant:
-        condition: service_started
-      init-postgres:
-        condition: service_completed_successfully
-      ingest-texts:
-        condition: service_completed_successfully
-    restart: unless-stopped
-
   # === POSTGRES WEB VIEWER ===
   adminer:
     image: adminer:4.8.1
