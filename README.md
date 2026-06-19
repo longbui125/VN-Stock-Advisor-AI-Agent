@@ -26,6 +26,7 @@ Lần đầu tiên, cài Ollama trên Windows và tải model:
 ```powershell
 winget install Ollama.Ollama
 ollama pull qwen3:8b
+ollama pull bge-m3
 ollama list
 ```
 
@@ -74,6 +75,7 @@ $env:QDRANT_URL="http://localhost:6333"
 $env:QDRANT_COLLECTION="vn_stock_text_chunks"
 $env:OLLAMA_BASE_URL="http://localhost:11434"
 $env:OLLAMA_MODEL="qwen3:8b"
+$env:OLLAMA_EMBED_MODEL="bge-m3"
 $env:AGENT_VERBOSE="true"
 $env:AGENT_MAX_ITERATIONS="6"
 $env:QDRANT_TOP_K="8"
@@ -139,11 +141,11 @@ File `.env` tối thiểu:
 ```env
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=qwen3:8b
+OLLAMA_EMBED_MODEL=bge-m3
 AGENT_VERBOSE=true
 AGENT_MAX_ITERATIONS=6
 POSTGRES_URI=postgresql://stocks:stocks@localhost:5432/stocks
 QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION=vn_stock_text_chunks
 QDRANT_TOP_K=8
-HASH_EMBEDDING_DIMENSIONS=384
 ```

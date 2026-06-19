@@ -1,3 +1,3 @@
-from src.retrieval.retriever import EmptyRetriever, QdrantHashRetriever, get_retriever
+from src.retrieval.retriever import EmptyRetriever, QdrantRetriever, get_retriever
 
-__all__ = ["EmptyRetriever", "QdrantHashRetriever", "get_retriever"]
+__all__ = ["EmptyRetriever", "QdrantRetriever", "get_retriever"]

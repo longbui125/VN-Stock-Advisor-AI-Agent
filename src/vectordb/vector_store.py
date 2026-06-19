@@ -5,7 +5,7 @@ import uuid
 from typing import Iterable
 
 from src.chunking.chunker import TextChunk
-from src.embeddings.embedder import HashingEmbeddings
+from src.embeddings.embedder import get_embeddings
 from src.utils.helpers import get_env
 
 
@@ -25,7 +25,6 @@ def upsert_text_chunks(
     chunks: Iterable[TextChunk],
     collection_name: str = "vn_stock_text_chunks",
     qdrant_url: str | None = None,
-    embedding_dimensions: int | None = None,
 ) -> int:
     chunk_list = list(chunks)
     if not chunk_list:
@@ -35,8 +34,7 @@ def upsert_text_chunks(
     from qdrant_client.models import Distance, PointStruct, VectorParams
 
     url = qdrant_url or get_env("QDRANT_URL", "http://localhost:6333")
-    dimensions = embedding_dimensions or int(get_env("HASH_EMBEDDING_DIMENSIONS", "384"))
-    embeddings = HashingEmbeddings(dimensions=dimensions)
+    embeddings = get_embeddings()
     vectors = embeddings.embed_documents([chunk.text for chunk in chunk_list])
 
     if not vectors:

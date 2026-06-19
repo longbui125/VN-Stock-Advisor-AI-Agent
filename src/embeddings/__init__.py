@@ -1,3 +1,3 @@
-from src.embeddings.embedder import HashingEmbeddings
+from src.embeddings.embedder import get_embeddings
 
-__all__ = ["HashingEmbeddings"]
+__all__ = ["get_embeddings"]

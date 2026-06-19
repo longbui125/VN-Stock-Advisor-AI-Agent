@@ -75,6 +75,8 @@ services:
       POSTGRES_URI: postgresql://stocks:stocks@postgres:5432/stocks
       QDRANT_URL: http://qdrant:6333
       QDRANT_COLLECTION: vn_stock_text_chunks
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_EMBED_MODEL: bge-m3
     command: ["python", "-m", "src.ingestion.text_loader", "--recreate-collection"]
     depends_on:
       init-postgres:
