@@ -21,12 +21,12 @@ def initialize_app() -> None:
 
 def setup_chat_interface():
     st.title("Vietnam Stock Advisor")
-    st.caption("Tro ly phan tich du lieu chung khoan Viet Nam")
+    st.caption("Trợ lý phân tích dữ liệu chứng khoán Việt Nam")
 
     msgs = StreamlitChatMessageHistory(key="langchain_messages")
 
     if "messages" not in st.session_state:
-        greeting = "Xin chao, ban muon phan tich ma co phieu nao?"
+        greeting = "Xin chào, bạn muốn phân tích mã cổ phiếu nào?"
         st.session_state.messages = [{"role": "assistant", "content": greeting}]
         msgs.add_ai_message(greeting)
 
@@ -48,7 +48,7 @@ def build_chat_history() -> list:
 
 
 def handle_user_input(msgs, agent_executor) -> None:
-    if prompt := st.chat_input("Hoi ve gia, BCTC, ty so tai chinh..."):
+    if prompt := st.chat_input("Hỏi về giá, BCTC, tỷ số tài chính...."):
         st.session_state.messages.append({"role": "human", "content": prompt})
         st.chat_message("human").write(prompt)
         msgs.add_user_message(prompt)
@@ -62,7 +62,7 @@ def handle_user_input(msgs, agent_executor) -> None:
                 },
             )
 
-            output = response.get("action_input", "Khong co phan hoi.")
+            output = response.get("action_input", "Không có phản hồi.")
             st.session_state.messages.append({"role": "assistant", "content": output})
             msgs.add_ai_message(output)
             st.write(output)
@@ -75,7 +75,7 @@ def main() -> None:
     try:
         agent_executor = get_llm_and_agent()
     except Exception as exc:
-        st.error(f"Khong khoi tao duoc agent: {exc}")
+        st.error(f"Không khởi tạo được agent: {exc}")
         st.stop()
 
     handle_user_input(msgs, agent_executor)
